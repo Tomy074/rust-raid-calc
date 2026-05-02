@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rust Raid Calculator — Calculadora de Explosivos y Raid</title>
+<meta name="description" content="Calculadora de explosivos y raid para Rust. Calcula qué podés craftear con tus recursos o qué necesitás para raidear.">
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Chakra+Petch:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0b08;--bg2:#131210;--bg3:#1a1916;--bg4:#22201a;
+  --border:#2e2b22;--border-hi:#3e3a2c;
+  --tx:#d0c8ae;--tx2:#8a7d5e;--tx3:#554e3a;
+  --accent:#d9612a;--accent2:#e87c47;--accentG:rgba(217,97,42,.28);
+  --cyan:#7db356;--cyanG:rgba(125,179,86,.22);
+  --yellow:#c8a040;--red:#c43b38;--green:#5a9c3a;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:'Chakra Petch',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:#000}
+input[type=number]{-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+.wrap{max-width:980px;margin:0 auto;padding:16px 14px 80px}
+
+/* ═══ HEADER ═══ */
+header{text-align:center;padding:28px 0 18px}
+h1{font-family:'Russo One',sans-serif;font-weight:900;font-size:clamp(1.6rem,5vw,2.4rem);letter-spacing:3px;color:#fff;text-transform:uppercase}
+h1 b{color:var(--accent);font-weight:900}
+.tagline{font-size:.78rem;color:var(--tx2);letter-spacing:2px;margin-top:4px;text-transform:uppercase;font-weight:300}
+
+/* ═══ TABS ═══ */
+.tabs{display:flex;gap:4px;margin:22px 0 20px;background:var(--bg2);border-radius:10px;padding:4px;border:1px solid var(--border)}
+.tab-btn{flex:1;padding:11px 0;text-align:center;font-family:'Russo One',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:transparent;color:var(--tx2);border:none;border-radius:8px;cursor:pointer;transition:.25s}
+.tab-btn.active{background:var(--accent);color:#000}
+.tab-btn:not(.active):hover{color:var(--tx);background:var(--bg3)}
+.tab-panel{display:none}.tab-panel.active{display:block;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ SECTION TITLES ═══ */
+.stitle{font-family:'Russo One',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.stitle::before{content:'';width:3px;height:16px;background:var(--cyan);border-radius:2px;box-shadow:0 0 8px var(--cyanG)}
+
+/* ═══ EXPLO FILTER ═══ */
+.explo-filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.explo-tog{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--tx3);font-family:'Chakra Petch',sans-serif;font-size:.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;transition:.2s}
+.explo-tog img{width:26px;height:26px;image-rendering:pixelated;opacity:.25;filter:grayscale(1);transition:.2s}
+.explo-tog.on{border-color:var(--accent);color:var(--tx);background:var(--bg3)}
+.explo-tog.on img{opacity:1;filter:none}
+.explo-tog:hover:not(.on){border-color:var(--border-hi);color:var(--tx2)}
+.raid-item.no-method{opacity:.45}
+.raid-item.no-method .ri-method{color:var(--red)}
+
+/* ═══ INPUT GRID ═══ */
+.input-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;margin-bottom:20px}
+.icard{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;transition:.25s}
+.icard:hover{border-color:var(--border-hi)}
+.icard.off{opacity:.25;pointer-events:none}
+.icard.off .icard-toggle{pointer-events:all;opacity:1}
+.icard img{width:42px;height:42px;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+.icard-name{font-size:.68rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;text-align:center;line-height:1.15}
+.icard input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:1rem;padding:7px 4px;text-align:center;outline:none;transition:.2s}
+.icard input::placeholder{color:var(--tx3);opacity:1}
+.icard input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accentG)}
+
+/* Toggle pill */
+.icard-toggle{position:absolute;top:5px;right:5px;width:28px;height:16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:.2s}
+.icard-toggle::after{content:'';position:absolute;top:2px;left:2px;width:10px;height:10px;background:var(--tx3);border-radius:50%;transition:.2s}
+.icard-toggle.on{background:var(--cyan);border-color:var(--cyan)}
+.icard-toggle.on::after{transform:translateX(12px);background:#fff}
+
+/* ═══ BUTTONS ═══ */
+.btn-calc{display:block;width:100%;max-width:360px;margin:24px auto;padding:13px;font-family:'Russo One',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;background:linear-gradient(135deg,var(--accent),#e05020);color:#000;border:none;border-radius:8px;cursor:pointer;transition:.2s;box-shadow:0 4px 20px var(--accentG)}
+.btn-calc:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--accentG)}
+.btn-calc:active{transform:translateY(0)}
+
+/* ═══ RESULTS GRID ═══ */
+.results{display:none;margin-top:20px}.results.show{display:block}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.rcard{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;position:relative;overflow:hidden;transition:.3s}
+.rcard.has::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.rcard img{width:64px;height:64px;image-rendering:pixelated;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));margin-bottom:6px}
+.rcard h3{font-size:.7rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+.rcard .rval{font-family:'Russo One',sans-serif;font-size:2.2rem;font-weight:900;color:var(--tx3);line-height:1;transition:.3s}
+.rcard.has .rval{color:var(--yellow);text-shadow:0 0 12px rgba(255,214,102,.25)}
+.rcard.zero .rval{color:var(--red)}
+.rcard .rcost{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--tx3);margin-top:8px;border-top:1px solid var(--border);padding-top:6px;text-align:left;line-height:1.7}
+.rcost .cl{display:flex;justify-content:space-between}.cl .cv{color:var(--yellow)}.cl .cv.ov{color:var(--red)}
+
+/* ═══ CRAFTING PLAN ═══ */
+.plan{display:none;margin-top:24px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}.plan.show{display:block}
+.plan-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.plan-row label{font-size:.75rem;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;min-width:90px}
+.plan-row select{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--tx);font-family:'Chakra Petch',sans-serif;font-size:.85rem;padding:8px 12px;outline:none;cursor:pointer;min-width:160px}
+.plan-row select:focus{border-color:var(--accent)}
+.plan-row input[type=number]{width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:.95rem;padding:8px;text-align:center;outline:none}
+.plan-row input:focus{border-color:var(--accent)}
+.plan-result{background:var(--bg);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--tx2);line-height:1.8;margin-top:6px}
+.plan-result b{color:var(--yellow);font-weight:700}
+.plan-result .pr-item{color:var(--cyan);font-weight:700}
+.plan-arrow{color:var(--accent);font-size:1.2rem;margin:0 2px}
+
+/* ═══ TAB2: RAID PLANNER ═══ */
+.raid-cat{margin-bottom:22px}
+.raid-cat-title{font-family:'Russo One',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.raid-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.raid-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:.25s;text-align:center}
+.raid-item.active{border-color:var(--accent);box-shadow:0 0 10px var(--accentG)}
+.raid-item img{width:52px;height:52px;image-rendering:pixelated;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.raid-info{width:100%}
+.raid-info .ri-name{font-size:.75rem;font-weight:600;color:var(--tx);line-height:1.2}
+.raid-info .ri-method{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--tx3);margin-top:2px}
+.raid-info .ri-sulfur{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--yellow);margin-top:1px}
+.raid-counter{display:flex;align-items:center;gap:3px;justify-content:center}
+.raid-counter button{width:28px;height:28px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--tx2);font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.raid-counter button:hover{border-color:var(--accent);color:var(--accent)}
+.raid-counter .rc-val{width:32px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:var(--yellow)}
+.raid-counter .rc-val.zero{color:var(--tx3)}
+
+.raid-summary{display:none;margin-top:20px;background:var(--bg2);border:1px solid var(--accent);border-radius:12px;padding:18px}.raid-summary.show{display:block}
+.rs-title{font-family:'Russo One',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.rs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.rs-box{background:var(--bg);border-radius:8px;padding:10px;text-align:center}
+.rs-box .rs-label{font-size:.6rem;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.rs-box .rs-val{font-family:'Russo One',sans-serif;font-size:1.3rem;font-weight:700;color:var(--yellow)}
+.rs-box .rs-val.accent{color:var(--accent)}
+.rs-raw{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--tx2);line-height:1.8}
+.rs-raw b{color:var(--yellow);font-weight:700}
+
+/* ═══ FOOTER ═══ */
+footer{text-align:center;margin-top:40px;padding-top:18px;border-top:1px solid var(--border);font-size:.65rem;color:var(--tx3);line-height:1.8}
+footer a{color:var(--accent);text-decoration:none}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:600px){
+  .input-grid{grid-template-columns:repeat(2,1fr)}
+  .res-grid{grid-template-columns:repeat(2,1fr)}
+  .raid-grid{grid-template-columns:repeat(2,1fr)}
+  .plan-row{flex-direction:column;align-items:flex-start;gap:6px}
+  .plan-row select,.plan-row input[type=number]{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Rust <b>Raid</b> Calc</h1>
+  <div class="tagline">Calculadora de Explosivos & Planificador de Raid</div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab(0)">⚒️ Recursos</button>
+  <button class="tab-btn" onclick="switchTab(1)">💣 Raid</button>
+</div>
+
+<!-- ════════════════ TAB 1: RECURSOS ════════════════ -->
+<div class="tab-panel active" id="tab-0">
+
+  <div class="stitle">Recursos disponibles</div>
+  <div class="input-grid" id="inputGrid"></div>
+
+  <button class="btn-calc" onclick="calculate()">Calcular</button>
+
+  <div class="results" id="results">
+    <div class="stitle">Máximo por ítem</div>
+    <div class="res-grid" id="resGrid"></div>
+  </div>
+
+  <div class="plan" id="plan">
+    <div class="stitle">Plan de crafteo</div>
+    <div class="plan-row">
+      <label>1° Ítem</label>
+      <select id="plan1type" onchange="updatePlan()">
+        <option value="">— Seleccionar —</option>
+        <option value="rocket">Rocket</option>
+        <option value="c4">C4</option>
+        <option value="explo">Explo 5.56</option>
+        <option value="satchel">Satchel</option>
+      </select>
+      <input type="number" id="plan1qty" placeholder="0" min="0" oninput="updatePlan()">
+    </div>
+    <div class="plan-row">
+      <label>2° Ítem</label>
+      <select id="plan2type" onchange="updatePlan()">
+        <option value="">— Seleccionar —</option>
+        <option value="rocket">Rocket</option>
+        <option value="c4">C4</option>
+        <option value="explo">Explo 5.56</option>
+        <option value="satchel">Satchel</option>
+      </select>
+    </div>
+    <div class="plan-result" id="planResult"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════ TAB 2: RAID ════════════════ -->
+<div class="tab-panel" id="tab-1">
+
+  <div class="stitle">Explosivos disponibles</div>
+  <div id="exploFilter"></div>
+
+  <div class="stitle">Objetivos a raidear</div>
+  <p style="font-size:.75rem;color:var(--tx2);margin-bottom:16px;line-height:1.5">
+    Seleccioná cuántas estructuras necesitás destruir. Se muestra el método más eficiente en azufre usando solo los explosivos habilitados.
+  </p>
+
+  <div id="raidTargets"></div>
+
+  <button class="btn-calc" onclick="calcRaid()">Calcular Raid</button>
+
+  <div class="raid-summary" id="raidSummary">
+    <div class="rs-title">Resumen del Raid</div>
+    <div class="rs-grid" id="rsSummaryGrid"></div>
+    <div class="stitle" style="margin-top:16px">Materias primas totales</div>
+    <div class="rs-raw" id="rsRaw"></div>
+  </div>
+
+</div>
+
+<footer>
+  Rust Raid Calc — No afiliado con Facepunch Studios<br>
+  Datos verificados Mayo 2026 — Fuentes: <a href="https://wikirust.com" target="_blank" rel="noopener">WikiRust</a>,
+  <a href="https://rust.fandom.com" target="_blank" rel="noopener">Rust Wiki</a>,
+  <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2402073095" target="_blank" rel="noopener">Steam Guide</a>
+</footer>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   DATA
+   ══════════════════════════════════════ */
+
+// Images (rustlabs CDN)
+const RL = 'https://rustlabs.com/img/items180/';
+const IMG = {
+  // Resources
+  sulfur:RL+'sulfur.png',
+  charcoal:RL+'charcoal.png',
+  metal:RL+'metal.fragments.png',
+  gp:RL+'gunpowder.png',
+  lgf:RL+'lowgradefuel.png',
+  explosives:RL+'explosives.png',
+  tech:RL+'techparts.png',
+  cloth:RL+'cloth.png',
+  rope:RL+'rope.png',
+  pipes:RL+'metalpipe.png',
+  // Craftables
+  rocket:RL+'ammo.rocket.basic.png',
+  c4:RL+'explosive.timed.png',
+  explo:RL+'ammo.rifle.explosive.png',
+  satchel:RL+'explosive.satchel.png',
+  // Doors
+  woodDoor:RL+'door.hinged.wood.png',
+  woodDoorD:RL+'door.double.hinged.wood.png',
+  sheetDoor:RL+'door.hinged.metal.png',
+  sheetDoorD:RL+'door.double.hinged.metal.png',
+  armoredDoor:RL+'door.hinged.toptier.png',
+  armoredDoorD:RL+'door.double.hinged.toptier.png',
+  garageDoor:RL+'door.hinged.metal.garage.png',
+  // Hatches
+  sheetHatchSq:RL+'floor.ladder.hatch.png',
+  sheetHatchTri:RL+'floor.triangle.ladder.hatch.png',
+  armHatchSq:'https://cdn.rusthelp.com/images/128/armored-ladder-hatch.webp',
+  armHatchTri:'https://cdn.rusthelp.com/images/128/armored-triangle-ladder-hatch.webp',
+  // Walls (building blocks) - using rusthelp CDN for building images
+  woodWall:'https://cdn.rusthelp.com/images/128/wood-wall.webp',
+  stoneWall:'https://cdn.rusthelp.com/images/128/stone-wall.webp',
+  metalWall:'https://cdn.rusthelp.com/images/128/metal-wall.webp',
+  armoredWall:'https://cdn.rusthelp.com/images/128/armored-wall.webp',
+  // Muros (High External)
+  highWoodWall:RL+'wall.external.high.png',
+  highStoneWall:RL+'wall.external.high.stone.png',
+};
+
+// Inputs config
+const INPUTS = [
+  {id:'sulfur',name:'Azufre',img:IMG.sulfur,toggle:true,on:true},
+  {id:'charcoal',name:'Carbón',img:IMG.charcoal,toggle:true,on:true},
+  {id:'metal',name:'Metal',img:IMG.metal,toggle:true,on:true},
+  {id:'gp',name:'Pólvora',img:IMG.gp,toggle:true,on:true},
+  {id:'lgf',name:'Low Grade',img:IMG.lgf,toggle:true,on:true},
+  {id:'explosives',name:'Explosivos',img:IMG.explosives,toggle:true,on:true},
+  {id:'tech',name:'Tech Trash',img:IMG.tech,toggle:true,on:true},
+  {id:'cloth',name:'Cloth',img:IMG.cloth,toggle:true,on:true},
+  {id:'rope',name:'Rope',img:IMG.rope,toggle:true,on:true},
+  {id:'pipes',name:'Pipes',img:IMG.pipes,toggle:true,on:true},
+];
+
+// Crafting recipes
+// Explosive component: 50GP + 3LGF + 10Sulfur + 10Metal
+// GP: 2Sulfur + 3Charcoal = 1GP
+const CRAFT = {
+  rocket:  {explosives:10, gp:150, pipes:2, cloth:0, tech:0, rope:0, sulfurD:0, metalD:0, name:'Rocket',  img:IMG.rocket},
+  c4:      {explosives:20, gp:0,   pipes:0, cloth:5, tech:2, rope:0, sulfurD:0, metalD:0, name:'C4',      img:IMG.c4},
+  explo:   {explosives:0,  gp:10,  pipes:0, cloth:0, tech:0, rope:0, sulfurD:5, metalD:5, name:'Explo 5.56',img:IMG.explo},
+  satchel: {explosives:0,  gp:240, pipes:0, cloth:10,tech:0, rope:1, sulfurD:0, metalD:80,name:'Satchel', img:IMG.satchel},
+};
+
+// Raid targets — multiple methods per target, sorted by sulfur (cheapest first)
+const RAID = [
+  // DOORS
+  {id:'woodDoor', name:'Puerta Madera', cat:'Puertas', img:IMG.woodDoor, methods:[
+    {rockets:0,c4:0,explo:18,satchels:0,sulfur:450,  label:'18 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:2,sulfur:960,  label:'2 Satchels'},
+    {rockets:1,c4:0,explo:0, satchels:0,sulfur:1400, label:'1 Rocket'},
+    {rockets:0,c4:1,explo:0, satchels:0,sulfur:2200, label:'1 C4'},
+  ]},
+  {id:'woodDoorD', name:'Puerta Madera Doble', cat:'Puertas', img:IMG.woodDoorD, methods:[
+    {rockets:0,c4:0,explo:18,satchels:0,sulfur:450,  label:'18 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:2,sulfur:960,  label:'2 Satchels'},
+    {rockets:1,c4:0,explo:0, satchels:0,sulfur:1400, label:'1 Rocket'},
+    {rockets:0,c4:1,explo:0, satchels:0,sulfur:2200, label:'1 C4'},
+  ]},
+  {id:'sheetDoor', name:'Puerta Chapa', cat:'Puertas', img:IMG.sheetDoor, methods:[
+    {rockets:1,c4:0,explo:8, satchels:0,sulfur:1600, label:'1 Rocket + 8 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:4,sulfur:1920, label:'4 Satchels'},
+    {rockets:0,c4:1,explo:0, satchels:0,sulfur:2200, label:'1 C4'},
+    {rockets:2,c4:0,explo:0, satchels:0,sulfur:2800, label:'2 Rockets'},
+  ]},
+  {id:'sheetDoorD', name:'Puerta Chapa Doble', cat:'Puertas', img:IMG.sheetDoorD, methods:[
+    {rockets:1,c4:0,explo:8, satchels:0,sulfur:1600, label:'1 Rocket + 8 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:4,sulfur:1920, label:'4 Satchels'},
+    {rockets:0,c4:1,explo:0, satchels:0,sulfur:2200, label:'1 C4'},
+    {rockets:2,c4:0,explo:0, satchels:0,sulfur:2800, label:'2 Rockets'},
+  ]},
+  {id:'garageDoor', name:'Garage Door', cat:'Puertas', img:IMG.garageDoor, methods:[
+    {rockets:3,c4:0,explo:0, satchels:0,sulfur:4200, label:'3 Rockets'},
+    {rockets:0,c4:0,explo:0, satchels:9,sulfur:4320, label:'9 Satchels'},
+    {rockets:0,c4:2,explo:0, satchels:0,sulfur:4400, label:'2 C4'},
+  ]},
+  {id:'armoredDoor', name:'Puerta Armored', cat:'Puertas', img:IMG.armoredDoor, methods:[
+    {rockets:0,c4:2,explo:35,satchels:0,sulfur:5275,  label:'2 C4 + 35 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:12,sulfur:5760, label:'12 Satchels'},
+    {rockets:1,c4:2,explo:0, satchels:0,sulfur:6000,  label:'2 C4 + 1 Rocket'},
+    {rockets:0,c4:3,explo:0, satchels:0,sulfur:6600,  label:'3 C4'},
+    {rockets:5,c4:0,explo:0, satchels:0,sulfur:7000,  label:'5 Rockets'},
+  ]},
+  {id:'armoredDoorD', name:'Puerta Armored Doble', cat:'Puertas', img:IMG.armoredDoorD, methods:[
+    {rockets:0,c4:2,explo:35,satchels:0,sulfur:5275,  label:'2 C4 + 35 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:12,sulfur:5760, label:'12 Satchels'},
+    {rockets:1,c4:2,explo:0, satchels:0,sulfur:6000,  label:'2 C4 + 1 Rocket'},
+    {rockets:0,c4:3,explo:0, satchels:0,sulfur:6600,  label:'3 C4'},
+    {rockets:5,c4:0,explo:0, satchels:0,sulfur:7000,  label:'5 Rockets'},
+  ]},
+  // HATCHES
+  {id:'sheetHatchSq', name:'Trampilla □ Chapa', cat:'Trampillas', img:IMG.sheetHatchSq, methods:[
+    {rockets:1,c4:0,explo:8, satchels:0,sulfur:1600, label:'1 Rocket + 8 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:4,sulfur:1920, label:'4 Satchels'},
+    {rockets:0,c4:1,explo:0, satchels:0,sulfur:2200, label:'1 C4'},
+    {rockets:2,c4:0,explo:0, satchels:0,sulfur:2800, label:'2 Rockets'},
+  ]},
+  {id:'sheetHatchTri', name:'Trampilla △ Chapa', cat:'Trampillas', img:IMG.sheetHatchTri, methods:[
+    {rockets:1,c4:0,explo:8, satchels:0,sulfur:1600, label:'1 Rocket + 8 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:4,sulfur:1920, label:'4 Satchels'},
+    {rockets:0,c4:1,explo:0, satchels:0,sulfur:2200, label:'1 C4'},
+    {rockets:2,c4:0,explo:0, satchels:0,sulfur:2800, label:'2 Rockets'},
+  ]},
+  {id:'armHatchSq', name:'Trampilla □ Armored', cat:'Trampillas', img:IMG.armHatchSq, methods:[
+    {rockets:0,c4:2,explo:35,satchels:0,sulfur:5275,  label:'2 C4 + 35 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:12,sulfur:5760, label:'12 Satchels'},
+    {rockets:1,c4:2,explo:0, satchels:0,sulfur:6000,  label:'2 C4 + 1 Rocket'},
+    {rockets:0,c4:3,explo:0, satchels:0,sulfur:6600,  label:'3 C4'},
+    {rockets:5,c4:0,explo:0, satchels:0,sulfur:7000,  label:'5 Rockets'},
+  ]},
+  {id:'armHatchTri', name:'Trampilla △ Armored', cat:'Trampillas', img:IMG.armHatchTri, methods:[
+    {rockets:0,c4:2,explo:35,satchels:0,sulfur:5275,  label:'2 C4 + 35 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:12,sulfur:5760, label:'12 Satchels'},
+    {rockets:1,c4:2,explo:0, satchels:0,sulfur:6000,  label:'2 C4 + 1 Rocket'},
+    {rockets:0,c4:3,explo:0, satchels:0,sulfur:6600,  label:'3 C4'},
+    {rockets:5,c4:0,explo:0, satchels:0,sulfur:7000,  label:'5 Rockets'},
+  ]},
+  // WALLS (building blocks)
+  {id:'woodWall', name:'Pared Madera', cat:'Paredes', img:IMG.woodWall, methods:[
+    {rockets:0,c4:0,explo:49,satchels:0,sulfur:1225, label:'49 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:4,sulfur:1920, label:'4 Satchels'},
+    {rockets:2,c4:0,explo:0, satchels:0,sulfur:2800, label:'2 Rockets'},
+    {rockets:0,c4:1,explo:0, satchels:0,sulfur:2200, label:'1 C4'},
+  ]},
+  {id:'stoneWall', name:'Pared Piedra', cat:'Paredes', img:IMG.stoneWall, methods:[
+    {rockets:1,c4:1,explo:18,satchels:0,sulfur:4050,  label:'1C4 + 1 Rocket + 18 Explo'},
+    {rockets:0,c4:2,explo:0, satchels:0,sulfur:4400,  label:'2 C4'},
+    {rockets:3,c4:0,explo:0, satchels:0,sulfur:4200,  label:'3 Rockets'},
+    {rockets:0,c4:0,explo:0, satchels:10,sulfur:4800, label:'10 Satchels'},
+  ]},
+  {id:'metalWall', name:'Pared Metal', cat:'Paredes', img:IMG.metalWall, methods:[
+    {rockets:0,c4:4,explo:0, satchels:0,sulfur:8800,  label:'4 C4'},
+    {rockets:8,c4:0,explo:0, satchels:0,sulfur:11200, label:'8 Rockets'},
+    {rockets:0,c4:0,explo:0, satchels:23,sulfur:11040,label:'23 Satchels'},
+  ]},
+  {id:'armoredWall', name:'Pared HQ/Armored', cat:'Paredes', img:IMG.armoredWall, methods:[
+    {rockets:0,c4:8,explo:0, satchels:0,sulfur:17600, label:'8 C4'},
+    {rockets:15,c4:0,explo:0,satchels:0,sulfur:21000, label:'15 Rockets'},
+    {rockets:0,c4:0,explo:0, satchels:46,sulfur:22080,label:'46 Satchels'},
+  ]},
+  // MUROS (high external walls)
+  {id:'highWoodWall', name:'Muro Madera', cat:'Muros', img:IMG.highWoodWall, methods:[
+    {rockets:0,c4:0,explo:90,satchels:0,sulfur:2250, label:'90 Explo'},
+    {rockets:0,c4:0,explo:0, satchels:5,sulfur:2400, label:'5 Satchels'},
+    {rockets:2,c4:0,explo:0, satchels:0,sulfur:2800, label:'2 Rockets'},
+  ]},
+  {id:'highStoneWall', name:'Muro Piedra', cat:'Muros', img:IMG.highStoneWall, methods:[
+    {rockets:0,c4:2,explo:0, satchels:0,sulfur:4400, label:'2 C4'},
+    {rockets:3,c4:0,explo:0, satchels:0,sulfur:4200, label:'3 Rockets'},
+  ]},
+];
+
+// State
+const toggleState = {};
+const raidCounts = {};
+const exploEnabled = {rocket:true, c4:true, explo:true, satchel:true};
+
+/* ══════════════════════════════════════
+   INIT
+   ══════════════════════════════════════ */
+function init() {
+  // Build input grid
+  const grid = document.getElementById('inputGrid');
+  INPUTS.forEach(inp => {
+    toggleState[inp.id] = inp.on;
+    grid.innerHTML += `
+      <div class="icard${inp.on?'':' off'}" id="card-${inp.id}">
+        <div class="icard-toggle ${inp.on?'on':''}" id="tog-${inp.id}" onclick="togInput('${inp.id}')"></div>
+        <img src="${inp.img}" alt="${inp.name}" onerror="this.style.display='none'">
+        <div class="icard-name">${inp.name}</div>
+        <input type="number" id="in-${inp.id}" min="0" placeholder="0">
+      </div>`;
+  });
+
+  // Build results grid
+  const rg = document.getElementById('resGrid');
+  Object.entries(CRAFT).forEach(([k,v]) => {
+    rg.innerHTML += `
+      <div class="rcard" id="res-${k}">
+        <img src="${v.img}" alt="${v.name}" onerror="this.style.display='none'">
+        <h3>${v.name}</h3>
+        <div class="rval" id="val-${k}">—</div>
+        <div class="rcost" id="cost-${k}"></div>
+      </div>`;
+  });
+
+  // Build explo filter
+  const exploData = [
+    {key:'rocket',  label:'Rocket',     img:IMG.rocket},
+    {key:'c4',      label:'C4',         img:IMG.c4},
+    {key:'explo',   label:'Explo 5.56', img:IMG.explo},
+    {key:'satchel', label:'Satchel',    img:IMG.satchel},
+  ];
+  const ef = document.getElementById('exploFilter');
+  let efHtml = '<div class="explo-filter-row">';
+  exploData.forEach(e => {
+    efHtml += `<button class="explo-tog on" id="etog-${e.key}" onclick="toggleExplo('${e.key}')">
+      <img src="${e.img}" alt="${e.label}"><span>${e.label}</span>
+    </button>`;
+  });
+  efHtml += '</div>';
+  ef.innerHTML = efHtml;
+
+  // Build raid targets
+  const container = document.getElementById('raidTargets');
+  const cats = [...new Set(RAID.map(r=>r.cat))];
+  cats.forEach(cat => {
+    const items = RAID.filter(r=>r.cat===cat);
+    let html = `<div class="raid-cat"><div class="raid-cat-title">${cat}</div><div class="raid-grid">`;
+    items.forEach(r => {
+      raidCounts[r.id] = 0;
+      const m = r.methods[0];
+      html += `
+        <div class="raid-item" id="ri-${r.id}">
+          <img src="${r.img}" alt="${r.name}" onerror="this.style.display='none'">
+          <div class="raid-info">
+            <div class="ri-name">${r.name}</div>
+            <div class="ri-method" id="rim-${r.id}">${m.label}</div>
+            <div class="ri-sulfur" id="ris-${r.id}">${fmtN(m.sulfur)} S/u</div>
+          </div>
+          <div class="raid-counter">
+            <button onclick="raidAdj('${r.id}',-5)">-5</button>
+            <button onclick="raidAdj('${r.id}',-1)">-</button>
+            <div class="rc-val zero" id="rc-${r.id}">0</div>
+            <button onclick="raidAdj('${r.id}',1)">+</button>
+            <button onclick="raidAdj('${r.id}',5)">+5</button>
+          </div>
+        </div>`;
+    });
+    html += '</div></div>';
+    container.innerHTML += html;
+  });
+}
+
+/* ══════════════════════════════════════
+   TABS
+   ══════════════════════════════════════ */
+function switchTab(i) {
+  document.querySelectorAll('.tab-btn').forEach((b,idx) => b.classList.toggle('active', idx===i));
+  document.querySelectorAll('.tab-panel').forEach((p,idx) => p.classList.toggle('active', idx===i));
+}
+
+/* ══════════════════════════════════════
+   EXPLO FILTER
+   ══════════════════════════════════════ */
+function getBestMethod(r) {
+  const available = r.methods.filter(m =>
+    !(m.rockets  > 0 && !exploEnabled.rocket) &&
+    !(m.c4       > 0 && !exploEnabled.c4) &&
+    !(m.explo    > 0 && !exploEnabled.explo) &&
+    !(m.satchels > 0 && !exploEnabled.satchel)
+  );
+  if (!available.length) return null;
+  return available.reduce((best, m) => m.sulfur < best.sulfur ? m : best);
+}
+
+function toggleExplo(key) {
+  exploEnabled[key] = !exploEnabled[key];
+  document.getElementById('etog-'+key).classList.toggle('on', exploEnabled[key]);
+  refreshRaidMethods();
+}
+
+function refreshRaidMethods() {
+  RAID.forEach(r => {
+    const m = getBestMethod(r);
+    const methodEl = document.getElementById('rim-'+r.id);
+    const sulfurEl = document.getElementById('ris-'+r.id);
+    const card     = document.getElementById('ri-'+r.id);
+    if (m) {
+      methodEl.textContent = m.label;
+      sulfurEl.textContent = fmtN(m.sulfur) + ' S/u';
+      card.classList.remove('no-method');
+    } else {
+      methodEl.textContent = 'Sin método disponible';
+      sulfurEl.textContent = '— S/u';
+      card.classList.add('no-method');
+    }
+  });
+}
+
+/* ══════════════════════════════════════
+   TOGGLES
+   ══════════════════════════════════════ */
+function togInput(id) {
+  toggleState[id] = !toggleState[id];
+  const on = toggleState[id];
+  document.getElementById('tog-'+id).classList.toggle('on', on);
+  const card = document.getElementById('card-'+id);
+  card.classList.toggle('off', !on);
+  document.getElementById('in-'+id).disabled = !on;
+}
+
+/* ══════════════════════════════════════
+   HELPERS
+   ══════════════════════════════════════ */
+function gv(id) { return Math.max(0, parseInt(document.getElementById('in-'+id).value) || 0); }
+function fmtN(n) { return n.toLocaleString('es-AR'); }
+
+function getRes() {
+  return {
+    sulfur: gv('sulfur'), charcoal: gv('charcoal'), metal: gv('metal'),
+    gp: gv('gp'), lgf: gv('lgf'), explosives: gv('explosives'),
+    tech: gv('tech'), cloth: gv('cloth'), rope: gv('rope'), pipes: gv('pipes'),
+  };
+}
+
+/* Check if N of type can be crafted */
+function canCraft(type, N, res) {
+  if (N <= 0) return true;
+  const r = CRAFT[type];
+  const expN = r.explosives * N;
+  const expStock = Math.min(res.explosives, expN);
+  const expCraft = expN - expStock;
+  const gpExp = 50 * expCraft;
+  const lgfExp = 3 * expCraft;
+  const sExp = 10 * expCraft;
+  const mExp = 10 * expCraft;
+  const gpItem = r.gp * N;
+  const gpTotal = gpExp + gpItem;
+  const gpStock = Math.min(res.gp, gpTotal);
+  const gpCraft = gpTotal - gpStock;
+  const sGp = 2 * gpCraft;
+  const cGp = 3 * gpCraft;
+  const sTotal = sExp + sGp + r.sulfurD * N;
+  const cTotal = cGp;
+  const mTotal = mExp + r.metalD * N;
+
+  if (toggleState.sulfur && sTotal > res.sulfur) return false;
+  if (toggleState.charcoal && cTotal > res.charcoal) return false;
+  if (toggleState.metal && mTotal > res.metal) return false;
+  if (toggleState.lgf && lgfExp > res.lgf) return false;
+  if (toggleState.pipes && r.pipes * N > res.pipes) return false;
+  if (toggleState.cloth && r.cloth * N > res.cloth) return false;
+  if (toggleState.tech && r.tech * N > res.tech) return false;
+  if (toggleState.rope && r.rope * N > res.rope) return false;
+  return true;
+}
+
+function maxCraft(type, res) {
+  let lo = 0, hi = 500000;
+  while (lo < hi) { const m = Math.ceil((lo + hi) / 2); if (canCraft(type, m, res)) lo = m; else hi = m - 1; }
+  return lo;
+}
+
+function getCosts(type, N, res) {
+  const r = CRAFT[type];
+  if (N <= 0) return null;
+  const expN = r.explosives * N;
+  const expStock = Math.min(res.explosives, expN);
+  const expCraft = expN - expStock;
+  const gpExp = 50 * expCraft;
+  const lgfExp = 3 * expCraft;
+  const sExp = 10 * expCraft;
+  const mExp = 10 * expCraft;
+  const gpItem = r.gp * N;
+  const gpTotal = gpExp + gpItem;
+  const gpStock = Math.min(res.gp, gpTotal);
+  const gpCraft = gpTotal - gpStock;
+  return {
+    sulfur: sExp + 2*gpCraft + r.sulfurD*N, charcoal: 3*gpCraft,
+    metal: mExp + r.metalD*N, lgf: lgfExp, gp: gpStock, explosives: expStock,
+    pipes: r.pipes*N, cloth: r.cloth*N, tech: r.tech*N, rope: r.rope*N,
+  };
+}
+
+/* Deduct resources for N items */
+function deductRes(type, N, res) {
+  const c = getCosts(type, N, res);
+  if (!c) return {...res};
+  const out = {...res};
+  out.sulfur -= c.sulfur;
+  out.charcoal -= c.charcoal;
+  out.metal -= c.metal;
+  out.lgf -= c.lgf;
+  out.gp -= c.gp;
+  out.explosives -= c.explosives;
+  out.pipes -= c.pipes;
+  out.cloth -= c.cloth;
+  out.tech -= c.tech;
+  out.rope -= c.rope;
+  return out;
+}
+
+/* ══════════════════════════════════════
+   CALCULATE (Tab 1)
+   ══════════════════════════════════════ */
+function calculate() {
+  const res = getRes();
+  const types = ['rocket','c4','explo','satchel'];
+  types.forEach(t => {
+    const n = maxCraft(t, res);
+    const card = document.getElementById('res-'+t);
+    const val = document.getElementById('val-'+t);
+    const cost = document.getElementById('cost-'+t);
+    val.textContent = fmtN(n);
+    card.className = 'rcard' + (n > 0 ? ' has' : ' zero');
+    if (n > 0) {
+      const c = getCosts(t, n, res);
+      let h = '';
+      const cl = (lb, used, avail, id) => {
+        if (used === 0) return '';
+        const on = toggleState[id];
+        const availStr = on ? fmtN(avail) : '∞';
+        const over = on && used > avail;
+        return `<div class="cl"><span>${lb}</span><span class="cv${over?' ov':''}">${fmtN(used)} / ${availStr}</span></div>`;
+      };
+      h += cl('Azufre', c.sulfur, res.sulfur, 'sulfur');
+      h += cl('Carbón', c.charcoal, res.charcoal, 'charcoal');
+      h += cl('Metal', c.metal, res.metal, 'metal');
+      if (c.gp) h += cl('Pólvora', c.gp, res.gp, 'gp');
+      if (c.lgf) h += cl('LGF', c.lgf, res.lgf, 'lgf');
+      if (c.explosives) h += cl('Explosivos', c.explosives, res.explosives, 'explosives');
+      if (c.pipes) h += cl('Pipes', c.pipes, res.pipes, 'pipes');
+      if (c.cloth) h += cl('Cloth', c.cloth, res.cloth, 'cloth');
+      if (c.tech) h += cl('Tech', c.tech, res.tech, 'tech');
+      if (c.rope) h += cl('Rope', c.rope, res.rope, 'rope');
+      cost.innerHTML = h;
+    } else {
+      cost.innerHTML = '<span style="color:var(--red)">Recursos insuficientes</span>';
+    }
+  });
+  document.getElementById('results').classList.add('show');
+  document.getElementById('plan').classList.add('show');
+  updatePlan();
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ══════════════════════════════════════
+   CRAFTING PLAN
+   ══════════════════════════════════════ */
+function updatePlan() {
+  const t1 = document.getElementById('plan1type').value;
+  const q1 = Math.max(0, parseInt(document.getElementById('plan1qty').value) || 0);
+  const t2 = document.getElementById('plan2type').value;
+  const out = document.getElementById('planResult');
+
+  if (!t1 || !t2) { out.innerHTML = '<span style="color:var(--tx3)">Seleccioná ambos ítems para ver el plan.</span>'; return; }
+
+  const res = getRes();
+  const max1 = maxCraft(t1, res);
+  const actual1 = Math.min(q1, max1);
+
+  if (actual1 <= 0 && q1 > 0) {
+    out.innerHTML = `<span style="color:var(--red)">No tenés recursos para craftear ${CRAFT[t1].name}.</span>`;
+    return;
+  }
+
+  const remaining = deductRes(t1, actual1, res);
+  const max2 = maxCraft(t2, remaining);
+
+  out.innerHTML = `
+    <span class="pr-item">${fmtN(actual1)}× ${CRAFT[t1].name}</span>
+    <span class="plan-arrow">→</span>
+    Recursos restantes <span class="plan-arrow">→</span>
+    <span class="pr-item">${fmtN(max2)}× ${CRAFT[t2].name}</span>
+    <br>
+    <span style="color:var(--tx3)">Máximo de ${CRAFT[t1].name}: ${fmtN(max1)} · 
+    Pedidos: ${fmtN(q1)} · Crafteados: ${fmtN(actual1)}</span>
+  `;
+}
+
+/* ══════════════════════════════════════
+   RAID (Tab 2)
+   ══════════════════════════════════════ */
+function raidAdj(id, delta) {
+  raidCounts[id] = Math.max(0, (raidCounts[id] || 0) + delta);
+  const el = document.getElementById('rc-'+id);
+  el.textContent = raidCounts[id];
+  el.className = 'rc-val' + (raidCounts[id] === 0 ? ' zero' : '');
+  document.getElementById('ri-'+id).classList.toggle('active', raidCounts[id] > 0);
+}
+
+function calcRaid() {
+  let totalC4 = 0, totalRockets = 0, totalExplo = 0, totalSatchels = 0, totalSulfur = 0;
+
+  RAID.forEach(r => {
+    const n = raidCounts[r.id] || 0;
+    if (n > 0) {
+      const m = getBestMethod(r);
+      if (!m) return;
+      totalC4       += m.c4       * n;
+      totalRockets  += m.rockets  * n;
+      totalExplo    += m.explo    * n;
+      totalSatchels += m.satchels * n;
+      totalSulfur   += m.sulfur   * n;
+    }
+  });
+
+  if (totalC4 === 0 && totalRockets === 0 && totalExplo === 0 && totalSatchels === 0) {
+    document.getElementById('raidSummary').classList.remove('show');
+    return;
+  }
+
+  // Build summary
+  const sg = document.getElementById('rsSummaryGrid');
+  sg.innerHTML = '';
+  if (totalC4) sg.innerHTML += rsBox('C4', totalC4);
+  if (totalRockets) sg.innerHTML += rsBox('Rockets', totalRockets);
+  if (totalExplo) sg.innerHTML += rsBox('Explo 5.56', totalExplo);
+  if (totalSatchels) sg.innerHTML += rsBox('Satchels', totalSatchels);
+  sg.innerHTML += `<div class="rs-box"><div class="rs-label">Azufre Total</div><div class="rs-val accent">${fmtN(totalSulfur)}</div></div>`;
+
+  // Calculate raw materials
+  // C4: each needs 20 explosives + 5 cloth + 2 tech
+  // Rocket: each needs 10 explosives + 150 GP + 2 pipes
+  // Explo ammo: each needs 10 GP + 5 sulfur + 5 metal
+  // Satchel: each needs 240 GP + 80 metal + 10 cloth + 1 rope
+  // Explosive: 50 GP + 3 LGF + 10 sulfur + 10 metal
+  // GP: 2 sulfur + 3 charcoal
+
+  const explosivesNeeded = totalC4 * 20 + totalRockets * 10;
+  const gpForExplosives = explosivesNeeded * 50;
+  const lgfForExplosives = explosivesNeeded * 3;
+  const sulfurForExplosives = explosivesNeeded * 10;
+  const metalForExplosives = explosivesNeeded * 10;
+
+  const gpForRockets = totalRockets * 150;
+  const gpForExplo = totalExplo * 10;
+  const gpForSatchels = totalSatchels * 240;
+  const totalGP = gpForExplosives + gpForRockets + gpForExplo + gpForSatchels;
+
+  const rawSulfurGP = totalGP * 2;
+  const rawCharcoalGP = totalGP * 3;
+  const rawSulfurExplo = totalExplo * 5;
+  const rawMetalExplo = totalExplo * 5;
+  const rawMetalSatchels = totalSatchels * 80;
+  const rawCloth = totalC4 * 5 + totalSatchels * 10;
+  const rawTech = totalC4 * 2;
+  const rawRope = totalSatchels * 1;
+  const rawPipes = totalRockets * 2;
+
+  const rawSulfur = rawSulfurGP + sulfurForExplosives + rawSulfurExplo;
+  const rawCharcoal = rawCharcoalGP;
+  const rawMetal = metalForExplosives + rawMetalExplo + rawMetalSatchels;
+  const rawLGF = lgfForExplosives;
+
+  const rr = document.getElementById('rsRaw');
+  rr.innerHTML = `
+    Azufre: <b>${fmtN(rawSulfur)}</b> · 
+    Carbón: <b>${fmtN(rawCharcoal)}</b> · 
+    Metal: <b>${fmtN(rawMetal)}</b> · 
+    LGF: <b>${fmtN(rawLGF)}</b>
+    ${rawPipes ? ' · Pipes: <b>'+fmtN(rawPipes)+'</b>' : ''}
+    ${rawCloth ? ' · Cloth: <b>'+fmtN(rawCloth)+'</b>' : ''}
+    ${rawTech ? ' · Tech Trash: <b>'+fmtN(rawTech)+'</b>' : ''}
+    ${rawRope ? ' · Rope: <b>'+fmtN(rawRope)+'</b>' : ''}
+    <br>
+    Pólvora total: <b>${fmtN(totalGP)}</b> · 
+    Explosivos: <b>${fmtN(explosivesNeeded)}</b>
+  `;
+
+  document.getElementById('raidSummary').classList.add('show');
+  document.getElementById('raidSummary').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function rsBox(label, val) {
+  return `<div class="rs-box"><div class="rs-label">${label}</div><div class="rs-val">${fmtN(val)}</div></div>`;
+}
+
+/* ══════════════════════════════════════
+   BOOT
+   ══════════════════════════════════════ */
+init();
+</script>
+</body>
+</html>
