@@ -129,6 +129,12 @@ h1 b{color:var(--accent);font-weight:900}
 .rs-raw{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--tx2);line-height:1.8}
 .rs-raw b{color:var(--yellow);font-weight:700}
 
+/* ═══ LANG BAR ═══ */
+.lang-bar{display:flex;justify-content:center;gap:5px;margin-bottom:18px;flex-wrap:wrap}
+.lang-btn{padding:5px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:1px;color:var(--tx2);transition:.2s}
+.lang-btn.active{border-color:var(--accent);color:var(--accent);background:var(--bg3)}
+.lang-btn:hover:not(.active){border-color:var(--border-hi);color:var(--tx)}
+
 /* ═══ FOOTER ═══ */
 footer{text-align:center;margin-top:40px;padding-top:18px;border-top:1px solid var(--border);font-size:.65rem;color:var(--tx3);line-height:1.8}
 footer a{color:var(--accent);text-decoration:none}
@@ -148,34 +154,36 @@ footer a{color:var(--accent);text-decoration:none}
 
 <header>
   <h1>Rust <b>Raid</b> Calc</h1>
-  <div class="tagline">Calculadora de Explosivos & Planificador de Raid</div>
+  <div class="tagline" data-i18n="tagline">Calculadora de Explosivos & Planificador de Raid</div>
 </header>
+
+<div class="lang-bar" id="langBar"></div>
 
 <!-- TABS -->
 <div class="tabs">
-  <button class="tab-btn active" onclick="switchTab(0)">⚒️ Recursos</button>
-  <button class="tab-btn" onclick="switchTab(1)">💣 Raid</button>
+  <button class="tab-btn active" onclick="switchTab(0)" data-i18n="tab1">Recursos</button>
+  <button class="tab-btn" onclick="switchTab(1)" data-i18n="tab2">Raid</button>
 </div>
 
 <!-- ════════════════ TAB 1: RECURSOS ════════════════ -->
 <div class="tab-panel active" id="tab-0">
 
-  <div class="stitle">Recursos disponibles</div>
+  <div class="stitle" data-i18n="availRes">Recursos disponibles</div>
   <div class="input-grid" id="inputGrid"></div>
 
-  <button class="btn-calc" onclick="calculate()">Calcular</button>
+  <button class="btn-calc" onclick="calculate()" data-i18n="calcBtn">Calcular</button>
 
   <div class="results" id="results">
-    <div class="stitle">Máximo por ítem</div>
+    <div class="stitle" data-i18n="maxPerItem">Máximo por ítem</div>
     <div class="res-grid" id="resGrid"></div>
   </div>
 
   <div class="plan" id="plan">
-    <div class="stitle">Plan de crafteo</div>
+    <div class="stitle" data-i18n="craftPlan">Plan de crafteo</div>
     <div class="plan-row">
-      <label>1° Ítem</label>
+      <label data-i18n="plan1">1° Ítem</label>
       <select id="plan1type" onchange="updatePlan()">
-        <option value="">— Seleccionar —</option>
+        <option value="" data-i18n="planSelect">— Seleccionar —</option>
         <option value="rocket">Rocket</option>
         <option value="c4">C4</option>
         <option value="explo">Explo 5.56</option>
@@ -184,9 +192,9 @@ footer a{color:var(--accent);text-decoration:none}
       <input type="number" id="plan1qty" placeholder="0" min="0" oninput="updatePlan()">
     </div>
     <div class="plan-row">
-      <label>2° Ítem</label>
+      <label data-i18n="plan2">2° Ítem</label>
       <select id="plan2type" onchange="updatePlan()">
-        <option value="">— Seleccionar —</option>
+        <option value="" data-i18n="planSelect">— Seleccionar —</option>
         <option value="rocket">Rocket</option>
         <option value="c4">C4</option>
         <option value="explo">Explo 5.56</option>
@@ -201,22 +209,22 @@ footer a{color:var(--accent);text-decoration:none}
 <!-- ════════════════ TAB 2: RAID ════════════════ -->
 <div class="tab-panel" id="tab-1">
 
-  <div class="stitle">Explosivos disponibles</div>
+  <div class="stitle" data-i18n="availExplo">Explosivos disponibles</div>
   <div id="exploFilter"></div>
 
-  <div class="stitle">Objetivos a raidear</div>
-  <p style="font-size:.75rem;color:var(--tx2);margin-bottom:16px;line-height:1.5">
+  <div class="stitle" data-i18n="raidTargetsTitle">Objetivos a raidear</div>
+  <p id="raidDesc" style="font-size:.75rem;color:var(--tx2);margin-bottom:16px;line-height:1.5">
     Seleccioná cuántas estructuras necesitás destruir. Se muestra el método más eficiente en azufre usando solo los explosivos habilitados.
   </p>
 
   <div id="raidTargets"></div>
 
-  <button class="btn-calc" onclick="calcRaid()">Calcular Raid</button>
+  <button class="btn-calc" onclick="calcRaid()" data-i18n="calcRaidBtn">Calcular Raid</button>
 
   <div class="raid-summary" id="raidSummary">
-    <div class="rs-title">Resumen del Raid</div>
+    <div class="rs-title" data-i18n="raidSummary">Resumen del Raid</div>
     <div class="rs-grid" id="rsSummaryGrid"></div>
-    <div class="stitle" style="margin-top:16px">Materias primas totales</div>
+    <div class="stitle" style="margin-top:16px" data-i18n="rawMats">Materias primas totales</div>
     <div class="rs-raw" id="rsRaw"></div>
   </div>
 
@@ -416,9 +424,191 @@ const raidCounts = {};
 const exploEnabled = {rocket:true, c4:true, explo:true, satchel:true};
 
 /* ══════════════════════════════════════
+   I18N
+   ══════════════════════════════════════ */
+const I18N = {
+  es:{
+    tagline:'Calculadora de Explosivos & Planificador de Raid',
+    tab1:'Recursos',tab2:'Raid',
+    availRes:'Recursos disponibles',availExplo:'Explosivos disponibles',
+    raidTargetsTitle:'Objetivos a raidear',maxPerItem:'Máximo por ítem',craftPlan:'Plan de crafteo',
+    raidDesc:'Seleccioná cuántas estructuras necesitás destruir. Se muestra el método más eficiente en azufre usando solo los explosivos habilitados.',
+    calcBtn:'Calcular',calcRaidBtn:'Calcular Raid',
+    plan1:'1° Ítem',plan2:'2° Ítem',planSelect:'— Seleccionar —',
+    planSelectBoth:'Seleccioná ambos ítems para ver el plan.',
+    planNoCraft:'No tenés recursos para craftear',planCrafted:'Crafteados',
+    planMax:'Máximo de',planRequested:'Pedidos',planRemaining:'Recursos restantes',
+    insufficient:'Recursos insuficientes',
+    raidSummary:'Resumen del Raid',rawMats:'Materias primas totales',
+    totalSulfur:'Azufre Total',noMethod:'Sin método disponible',
+    n_sulfur:'Azufre',n_charcoal:'Carbón',n_metal:'Metal',n_gp:'Pólvora',
+    n_lgf:'Low Grade',n_explosives:'Explosivos',n_tech:'Tech Trash',
+    n_cloth:'Cloth',n_rope:'Rope',n_pipes:'Pipes',
+    raw_sulfur:'Azufre',raw_charcoal:'Carbón',raw_metal:'Metal',raw_lgf:'LGF',
+    raw_pipes:'Pipes',raw_cloth:'Cloth',raw_tech:'Tech Trash',raw_rope:'Rope',
+    raw_gp:'Pólvora total',raw_explo:'Explosivos',
+    Puertas:'Puertas',Trampillas:'Trampillas',Paredes:'Paredes',Muros:'Muros',
+    woodDoor:'Puerta Madera',woodDoorD:'Puerta Madera Doble',
+    sheetDoor:'Puerta Chapa',sheetDoorD:'Puerta Chapa Doble',
+    garageDoor:'Garage Door',armoredDoor:'Puerta Armored',armoredDoorD:'Puerta Armored Doble',
+    sheetHatchSq:'Trampilla □ Chapa',sheetHatchTri:'Trampilla △ Chapa',
+    armHatchSq:'Trampilla □ Armored',armHatchTri:'Trampilla △ Armored',
+    woodWall:'Pared Madera',stoneWall:'Pared Piedra',metalWall:'Pared Metal',armoredWall:'Pared HQ/Armored',
+    highWoodWall:'Muro Madera',highStoneWall:'Muro Piedra',
+  },
+  en:{
+    tagline:'Explosives Calculator & Raid Planner',
+    tab1:'Resources',tab2:'Raid',
+    availRes:'Available resources',availExplo:'Available explosives',
+    raidTargetsTitle:'Raid targets',maxPerItem:'Max per item',craftPlan:'Crafting plan',
+    raidDesc:'Select how many structures you need to destroy. Shows the most sulfur-efficient method using only the enabled explosives.',
+    calcBtn:'Calculate',calcRaidBtn:'Calculate Raid',
+    plan1:'1st Item',plan2:'2nd Item',planSelect:'— Select —',
+    planSelectBoth:'Select both items to see the plan.',
+    planNoCraft:"Not enough resources to craft",planCrafted:'Crafted',
+    planMax:'Max of',planRequested:'Requested',planRemaining:'Remaining resources',
+    insufficient:'Insufficient resources',
+    raidSummary:'Raid Summary',rawMats:'Total raw materials',
+    totalSulfur:'Total Sulfur',noMethod:'No method available',
+    n_sulfur:'Sulfur',n_charcoal:'Charcoal',n_metal:'Metal',n_gp:'Gunpowder',
+    n_lgf:'Low Grade',n_explosives:'Explosives',n_tech:'Tech Trash',
+    n_cloth:'Cloth',n_rope:'Rope',n_pipes:'Pipes',
+    raw_sulfur:'Sulfur',raw_charcoal:'Charcoal',raw_metal:'Metal',raw_lgf:'LGF',
+    raw_pipes:'Pipes',raw_cloth:'Cloth',raw_tech:'Tech Trash',raw_rope:'Rope',
+    raw_gp:'Total Gunpowder',raw_explo:'Explosives',
+    Puertas:'Doors',Trampillas:'Hatches',Paredes:'Walls',Muros:'External Walls',
+    woodDoor:'Wood Door',woodDoorD:'Wood Double Door',
+    sheetDoor:'Sheet Metal Door',sheetDoorD:'Sheet Metal Double Door',
+    garageDoor:'Garage Door',armoredDoor:'Armored Door',armoredDoorD:'Armored Double Door',
+    sheetHatchSq:'Square Sheet Hatch',sheetHatchTri:'Triangle Sheet Hatch',
+    armHatchSq:'Square Armored Hatch',armHatchTri:'Triangle Armored Hatch',
+    woodWall:'Wood Wall',stoneWall:'Stone Wall',metalWall:'Metal Wall',armoredWall:'Armored Wall',
+    highWoodWall:'High Wood Wall',highStoneWall:'High Stone Wall',
+  },
+  ru:{
+    tagline:'Калькулятор взрывчатки и планировщик рейда',
+    tab1:'Ресурсы',tab2:'Рейд',
+    availRes:'Доступные ресурсы',availExplo:'Доступная взрывчатка',
+    raidTargetsTitle:'Цели рейда',maxPerItem:'Максимум по предмету',craftPlan:'План крафта',
+    raidDesc:'Выберите количество строений для уничтожения. Показывается наиболее эффективный по сере метод.',
+    calcBtn:'Рассчитать',calcRaidBtn:'Рассчитать рейд',
+    plan1:'1-й предмет',plan2:'2-й предмет',planSelect:'— Выбрать —',
+    planSelectBoth:'Выберите оба предмета для отображения плана.',
+    planNoCraft:'Недостаточно ресурсов для крафта',planCrafted:'Скрафчено',
+    planMax:'Максимум',planRequested:'Запрошено',planRemaining:'Оставшиеся ресурсы',
+    insufficient:'Недостаточно ресурсов',
+    raidSummary:'Итого рейда',rawMats:'Всего сырья',
+    totalSulfur:'Всего серы',noMethod:'Метод недоступен',
+    n_sulfur:'Сера',n_charcoal:'Уголь',n_metal:'Металл',n_gp:'Порох',
+    n_lgf:'Low Grade',n_explosives:'Взрывчатка',n_tech:'Tech Trash',
+    n_cloth:'Ткань',n_rope:'Верёвка',n_pipes:'Трубы',
+    raw_sulfur:'Сера',raw_charcoal:'Уголь',raw_metal:'Металл',raw_lgf:'LGF',
+    raw_pipes:'Трубы',raw_cloth:'Ткань',raw_tech:'Tech Trash',raw_rope:'Верёвка',
+    raw_gp:'Всего пороха',raw_explo:'Взрывчатки',
+    Puertas:'Двери',Trampillas:'Люки',Paredes:'Стены',Muros:'Внешние стены',
+    woodDoor:'Деревянная дверь',woodDoorD:'Двойная деревянная дверь',
+    sheetDoor:'Металлическая дверь',sheetDoorD:'Двойная металлическая дверь',
+    garageDoor:'Гаражная дверь',armoredDoor:'Бронированная дверь',armoredDoorD:'Двойная бронированная дверь',
+    sheetHatchSq:'□ Металлический люк',sheetHatchTri:'△ Металлический люк',
+    armHatchSq:'□ Бронированный люк',armHatchTri:'△ Бронированный люк',
+    woodWall:'Деревянная стена',stoneWall:'Каменная стена',metalWall:'Металлическая стена',armoredWall:'Бронированная стена',
+    highWoodWall:'Высокая деревянная стена',highStoneWall:'Высокая каменная стена',
+  },
+  pt:{
+    tagline:'Calculadora de Explosivos & Planejador de Raid',
+    tab1:'Recursos',tab2:'Raid',
+    availRes:'Recursos disponíveis',availExplo:'Explosivos disponíveis',
+    raidTargetsTitle:'Alvos do raid',maxPerItem:'Máximo por item',craftPlan:'Plano de craft',
+    raidDesc:'Selecione quantas estruturas precisa destruir. Mostra o método mais eficiente em enxofre.',
+    calcBtn:'Calcular',calcRaidBtn:'Calcular Raid',
+    plan1:'1° Item',plan2:'2° Item',planSelect:'— Selecionar —',
+    planSelectBoth:'Selecione ambos os itens para ver o plano.',
+    planNoCraft:'Não há recursos para craftar',planCrafted:'Craftados',
+    planMax:'Máximo de',planRequested:'Solicitados',planRemaining:'Recursos restantes',
+    insufficient:'Recursos insuficientes',
+    raidSummary:'Resumo do Raid',rawMats:'Matérias-primas totais',
+    totalSulfur:'Enxofre Total',noMethod:'Nenhum método disponível',
+    n_sulfur:'Enxofre',n_charcoal:'Carvão',n_metal:'Metal',n_gp:'Pólvora',
+    n_lgf:'Low Grade',n_explosives:'Explosivos',n_tech:'Tech Trash',
+    n_cloth:'Cloth',n_rope:'Rope',n_pipes:'Canos',
+    raw_sulfur:'Enxofre',raw_charcoal:'Carvão',raw_metal:'Metal',raw_lgf:'LGF',
+    raw_pipes:'Canos',raw_cloth:'Cloth',raw_tech:'Tech Trash',raw_rope:'Rope',
+    raw_gp:'Pólvora total',raw_explo:'Explosivos',
+    Puertas:'Portas',Trampillas:'Alçapões',Paredes:'Paredes',Muros:'Muros externos',
+    woodDoor:'Porta de Madeira',woodDoorD:'Porta Dupla de Madeira',
+    sheetDoor:'Porta de Metal',sheetDoorD:'Porta Dupla de Metal',
+    garageDoor:'Porta de Garagem',armoredDoor:'Porta Blindada',armoredDoorD:'Porta Dupla Blindada',
+    sheetHatchSq:'□ Alçapão de Metal',sheetHatchTri:'△ Alçapão de Metal',
+    armHatchSq:'□ Alçapão Blindado',armHatchTri:'△ Alçapão Blindado',
+    woodWall:'Parede de Madeira',stoneWall:'Parede de Pedra',metalWall:'Parede de Metal',armoredWall:'Parede Blindada',
+    highWoodWall:'Muro de Madeira',highStoneWall:'Muro de Pedra',
+  },
+  de:{
+    tagline:'Sprengstoffrechner & Raid-Planer',
+    tab1:'Ressourcen',tab2:'Raid',
+    availRes:'Verfügbare Ressourcen',availExplo:'Verfügbare Sprengstoffe',
+    raidTargetsTitle:'Raid-Ziele',maxPerItem:'Maximum pro Item',craftPlan:'Craftplan',
+    raidDesc:'Wähle aus, wie viele Strukturen zerstört werden sollen. Zeigt die schwefeleffizienteste Methode.',
+    calcBtn:'Berechnen',calcRaidBtn:'Raid berechnen',
+    plan1:'1. Item',plan2:'2. Item',planSelect:'— Auswählen —',
+    planSelectBoth:'Wähle beide Items aus, um den Plan zu sehen.',
+    planNoCraft:'Keine Ressourcen zum Craften von',planCrafted:'Gecraftet',
+    planMax:'Maximum von',planRequested:'Angefordert',planRemaining:'Verbleibende Ressourcen',
+    insufficient:'Unzureichende Ressourcen',
+    raidSummary:'Raid-Zusammenfassung',rawMats:'Gesamte Rohmaterialien',
+    totalSulfur:'Gesamt Schwefel',noMethod:'Keine Methode verfügbar',
+    n_sulfur:'Schwefel',n_charcoal:'Holzkohle',n_metal:'Metall',n_gp:'Schießpulver',
+    n_lgf:'Low Grade',n_explosives:'Sprengstoff',n_tech:'Tech Trash',
+    n_cloth:'Stoff',n_rope:'Seil',n_pipes:'Rohre',
+    raw_sulfur:'Schwefel',raw_charcoal:'Holzkohle',raw_metal:'Metall',raw_lgf:'LGF',
+    raw_pipes:'Rohre',raw_cloth:'Stoff',raw_tech:'Tech Trash',raw_rope:'Seil',
+    raw_gp:'Schießpulver gesamt',raw_explo:'Sprengstoff',
+    Puertas:'Türen',Trampillas:'Luken',Paredes:'Wände',Muros:'Außenwände',
+    woodDoor:'Holztür',woodDoorD:'Doppelte Holztür',
+    sheetDoor:'Blechtür',sheetDoorD:'Doppelte Blechtür',
+    garageDoor:'Garagentor',armoredDoor:'Panzertür',armoredDoorD:'Doppelte Panzertür',
+    sheetHatchSq:'□ Blech-Luke',sheetHatchTri:'△ Blech-Luke',
+    armHatchSq:'□ Panzer-Luke',armHatchTri:'△ Panzer-Luke',
+    woodWall:'Holzwand',stoneWall:'Steinwand',metalWall:'Metallwand',armoredWall:'Panzerwand',
+    highWoodWall:'Hohe Holzwand',highStoneWall:'Hohe Steinwand',
+  },
+};
+
+const LANGS = [{k:'es',label:'ES'},{k:'en',label:'EN'},{k:'ru',label:'RU'},{k:'pt',label:'PT'},{k:'de',label:'DE'}];
+let currentLang = (()=>{ const s=localStorage.getItem('lang'), b=navigator.language?.slice(0,2)||''; return I18N[s]?s:I18N[b]?b:'es'; })();
+
+function T(key){ return I18N[currentLang]?.[key]??I18N.es[key]??key; }
+
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem('lang',lang);
+  applyLang();
+}
+
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=T(el.dataset.i18n); });
+  document.getElementById('raidDesc').textContent=T('raidDesc');
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));
+  INPUTS.forEach(inp=>{ const el=document.getElementById('iname-'+inp.id); if(el) el.textContent=T('n_'+inp.id); });
+  RAID.forEach(r=>{
+    const ne=document.getElementById('rname-'+r.id); if(ne) ne.textContent=T(r.id);
+    const me=document.getElementById('rim-'+r.id), se=document.getElementById('ris-'+r.id);
+    if(me&&se){ const m=getBestMethod(r); if(m){me.textContent=m.label;se.textContent=fmtN(m.sulfur)+' S/u';document.getElementById('ri-'+r.id)?.classList.remove('no-method');}else{me.textContent=T('noMethod');se.textContent='— S/u';document.getElementById('ri-'+r.id)?.classList.add('no-method');} }
+  });
+  document.querySelectorAll('.raid-cat-title[data-cat]').forEach(el=>el.textContent=T(el.dataset.cat));
+  document.querySelectorAll('[data-i18n="planSelect"]').forEach(el=>el.textContent=T('planSelect'));
+}
+
+/* ══════════════════════════════════════
    INIT
    ══════════════════════════════════════ */
 function init() {
+  // Build lang bar
+  const lb = document.getElementById('langBar');
+  LANGS.forEach(l => {
+    lb.innerHTML += `<button class="lang-btn${l.k===currentLang?' active':''}" data-lang="${l.k}" onclick="setLang('${l.k}')">${l.label}</button>`;
+  });
+
   // Build input grid
   const grid = document.getElementById('inputGrid');
   INPUTS.forEach(inp => {
@@ -426,8 +616,8 @@ function init() {
     grid.innerHTML += `
       <div class="icard${inp.on?'':' off'}" id="card-${inp.id}">
         <div class="icard-toggle ${inp.on?'on':''}" id="tog-${inp.id}" onclick="togInput('${inp.id}')"></div>
-        <img src="${inp.img}" alt="${inp.name}" onerror="this.style.display='none'">
-        <div class="icard-name">${inp.name}</div>
+        <img src="${inp.img}" alt="${inp.id}" onerror="this.style.display='none'">
+        <div class="icard-name" id="iname-${inp.id}">${T('n_'+inp.id)}</div>
         <input type="number" id="in-${inp.id}" min="0" placeholder="0">
       </div>`;
   });
@@ -466,15 +656,15 @@ function init() {
   const cats = [...new Set(RAID.map(r=>r.cat))];
   cats.forEach(cat => {
     const items = RAID.filter(r=>r.cat===cat);
-    let html = `<div class="raid-cat"><div class="raid-cat-title">${cat}</div><div class="raid-grid">`;
+    let html = `<div class="raid-cat"><div class="raid-cat-title" data-cat="${cat}">${T(cat)}</div><div class="raid-grid">`;
     items.forEach(r => {
       raidCounts[r.id] = 0;
       const m = r.methods[0];
       html += `
         <div class="raid-item" id="ri-${r.id}">
-          <img src="${r.img}" alt="${r.name}" onerror="this.style.display='none'">
+          <img src="${r.img}" alt="${r.id}" onerror="this.style.display='none'">
           <div class="raid-info">
-            <div class="ri-name">${r.name}</div>
+            <div class="ri-name" id="rname-${r.id}">${T(r.id)}</div>
             <div class="ri-method" id="rim-${r.id}">${m.label}</div>
             <div class="ri-sulfur" id="ris-${r.id}">${fmtN(m.sulfur)} S/u</div>
           </div>
@@ -531,7 +721,7 @@ function refreshRaidMethods() {
       sulfurEl.textContent = fmtN(m.sulfur) + ' S/u';
       card.classList.remove('no-method');
     } else {
-      methodEl.textContent = 'Sin método disponible';
+      methodEl.textContent = T('noMethod');
       sulfurEl.textContent = '— S/u';
       card.classList.add('no-method');
     }
@@ -553,7 +743,7 @@ function togInput(id) {
 /* ══════════════════════════════════════
    HELPERS
    ══════════════════════════════════════ */
-function gv(id) { return Math.max(0, parseInt(document.getElementById('in-'+id).value) || 0); }
+function gv(id) { const v = (document.getElementById('in-'+id).value||'').replace(/\./g,'').replace(',','.'); return Math.max(0, parseFloat(v)||0)|0; }
 function fmtN(n) { return n.toLocaleString('es-AR'); }
 
 function getRes() {
@@ -664,19 +854,19 @@ function calculate() {
         const over = on && used > avail;
         return `<div class="cl"><span>${lb}</span><span class="cv${over?' ov':''}">${fmtN(used)} / ${availStr}</span></div>`;
       };
-      h += cl('Azufre', c.sulfur, res.sulfur, 'sulfur');
-      h += cl('Carbón', c.charcoal, res.charcoal, 'charcoal');
-      h += cl('Metal', c.metal, res.metal, 'metal');
-      if (c.gp) h += cl('Pólvora', c.gp, res.gp, 'gp');
-      if (c.lgf) h += cl('LGF', c.lgf, res.lgf, 'lgf');
-      if (c.explosives) h += cl('Explosivos', c.explosives, res.explosives, 'explosives');
-      if (c.pipes) h += cl('Pipes', c.pipes, res.pipes, 'pipes');
-      if (c.cloth) h += cl('Cloth', c.cloth, res.cloth, 'cloth');
-      if (c.tech) h += cl('Tech', c.tech, res.tech, 'tech');
-      if (c.rope) h += cl('Rope', c.rope, res.rope, 'rope');
+      h += cl(T('raw_sulfur'), c.sulfur, res.sulfur, 'sulfur');
+      h += cl(T('raw_charcoal'), c.charcoal, res.charcoal, 'charcoal');
+      h += cl(T('raw_metal'), c.metal, res.metal, 'metal');
+      if (c.gp) h += cl(T('n_gp'), c.gp, res.gp, 'gp');
+      if (c.lgf) h += cl(T('raw_lgf'), c.lgf, res.lgf, 'lgf');
+      if (c.explosives) h += cl(T('n_explosives'), c.explosives, res.explosives, 'explosives');
+      if (c.pipes) h += cl(T('raw_pipes'), c.pipes, res.pipes, 'pipes');
+      if (c.cloth) h += cl(T('raw_cloth'), c.cloth, res.cloth, 'cloth');
+      if (c.tech) h += cl(T('n_tech'), c.tech, res.tech, 'tech');
+      if (c.rope) h += cl(T('raw_rope'), c.rope, res.rope, 'rope');
       cost.innerHTML = h;
     } else {
-      cost.innerHTML = '<span style="color:var(--red)">Recursos insuficientes</span>';
+      cost.innerHTML = `<span style="color:var(--red)">${T('insufficient')}</span>`;
     }
   });
   document.getElementById('results').classList.add('show');
@@ -694,14 +884,14 @@ function updatePlan() {
   const t2 = document.getElementById('plan2type').value;
   const out = document.getElementById('planResult');
 
-  if (!t1 || !t2) { out.innerHTML = '<span style="color:var(--tx3)">Seleccioná ambos ítems para ver el plan.</span>'; return; }
+  if (!t1 || !t2) { out.innerHTML = `<span style="color:var(--tx3)">${T('planSelectBoth')}</span>`; return; }
 
   const res = getRes();
   const max1 = maxCraft(t1, res);
   const actual1 = Math.min(q1, max1);
 
   if (actual1 <= 0 && q1 > 0) {
-    out.innerHTML = `<span style="color:var(--red)">No tenés recursos para craftear ${CRAFT[t1].name}.</span>`;
+    out.innerHTML = `<span style="color:var(--red)">${T('planNoCraft')} ${CRAFT[t1].name}.</span>`;
     return;
   }
 
@@ -711,11 +901,11 @@ function updatePlan() {
   out.innerHTML = `
     <span class="pr-item">${fmtN(actual1)}× ${CRAFT[t1].name}</span>
     <span class="plan-arrow">→</span>
-    Recursos restantes <span class="plan-arrow">→</span>
+    ${T('planRemaining')} <span class="plan-arrow">→</span>
     <span class="pr-item">${fmtN(max2)}× ${CRAFT[t2].name}</span>
     <br>
-    <span style="color:var(--tx3)">Máximo de ${CRAFT[t1].name}: ${fmtN(max1)} · 
-    Pedidos: ${fmtN(q1)} · Crafteados: ${fmtN(actual1)}</span>
+    <span style="color:var(--tx3)">${T('planMax')} ${CRAFT[t1].name}: ${fmtN(max1)} ·
+    ${T('planRequested')}: ${fmtN(q1)} · ${T('planCrafted')}: ${fmtN(actual1)}</span>
   `;
 }
 
@@ -758,7 +948,7 @@ function calcRaid() {
   if (totalRockets) sg.innerHTML += rsBox('Rockets', totalRockets);
   if (totalExplo) sg.innerHTML += rsBox('Explo 5.56', totalExplo);
   if (totalSatchels) sg.innerHTML += rsBox('Satchels', totalSatchels);
-  sg.innerHTML += `<div class="rs-box"><div class="rs-label">Azufre Total</div><div class="rs-val accent">${fmtN(totalSulfur)}</div></div>`;
+  sg.innerHTML += `<div class="rs-box"><div class="rs-label">${T('totalSulfur')}</div><div class="rs-val accent">${fmtN(totalSulfur)}</div></div>`;
 
   // Calculate raw materials
   // C4: each needs 20 explosives + 5 cloth + 2 tech
@@ -796,17 +986,17 @@ function calcRaid() {
 
   const rr = document.getElementById('rsRaw');
   rr.innerHTML = `
-    Azufre: <b>${fmtN(rawSulfur)}</b> · 
-    Carbón: <b>${fmtN(rawCharcoal)}</b> · 
-    Metal: <b>${fmtN(rawMetal)}</b> · 
-    LGF: <b>${fmtN(rawLGF)}</b>
-    ${rawPipes ? ' · Pipes: <b>'+fmtN(rawPipes)+'</b>' : ''}
-    ${rawCloth ? ' · Cloth: <b>'+fmtN(rawCloth)+'</b>' : ''}
-    ${rawTech ? ' · Tech Trash: <b>'+fmtN(rawTech)+'</b>' : ''}
-    ${rawRope ? ' · Rope: <b>'+fmtN(rawRope)+'</b>' : ''}
+    ${T('raw_sulfur')}: <b>${fmtN(rawSulfur)}</b> ·
+    ${T('raw_charcoal')}: <b>${fmtN(rawCharcoal)}</b> ·
+    ${T('raw_metal')}: <b>${fmtN(rawMetal)}</b> ·
+    ${T('raw_lgf')}: <b>${fmtN(rawLGF)}</b>
+    ${rawPipes ? ' · '+T('raw_pipes')+': <b>'+fmtN(rawPipes)+'</b>' : ''}
+    ${rawCloth ? ' · '+T('raw_cloth')+': <b>'+fmtN(rawCloth)+'</b>' : ''}
+    ${rawTech ? ' · '+T('n_tech')+': <b>'+fmtN(rawTech)+'</b>' : ''}
+    ${rawRope ? ' · '+T('raw_rope')+': <b>'+fmtN(rawRope)+'</b>' : ''}
     <br>
-    Pólvora total: <b>${fmtN(totalGP)}</b> · 
-    Explosivos: <b>${fmtN(explosivesNeeded)}</b>
+    ${T('raw_gp')}: <b>${fmtN(totalGP)}</b> ·
+    ${T('raw_explo')}: <b>${fmtN(explosivesNeeded)}</b>
   `;
 
   document.getElementById('raidSummary').classList.add('show');
